@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Forge — AI App Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{--bg:#f4f4f7;--pn:#fff;--bd:#dadae2;--tx:#16161d;--mu:#6a6a78;--ac:#2563eb;--bad:#dc2626;--ok:#16a34a;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0c0c11;--pn:#16161e;--bd:#2a2a37;--tx:#ececf2;--mu:#8c8c9b;--ac:#5b93ff;color-scheme:dark}}
+:root[data-theme=dark]{--bg:#0c0c11;--pn:#16161e;--bd:#2a2a37;--tx:#ececf2;--mu:#8c8c9b;--ac:#5b93ff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0}*{box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font:14px/1.5 Inter,system-ui,sans-serif}
+#app{height:100%;display:flex;flex-direction:column}
+.bar{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--pn);border-bottom:1px solid var(--bd);flex-wrap:wrap}
+.sp{flex:1}.mu{color:var(--mu)}.ok{color:var(--ok)}.bad{color:var(--bad)}
+.b,.tb{font:inherit;color:var(--tx);background:transparent;border:1px solid var(--bd);border-radius:8px;padding:5px 10px;cursor:pointer;text-align:left}
+.b:hover,.tb:hover{border-color:var(--ac)}
+.on{background:var(--ac)!important;color:#fff!important;border-color:var(--ac)!important}
+.pri{background:var(--ac);color:#fff;border-color:var(--ac)}
+.chip2{border:1px solid var(--bd);border-radius:99px;padding:3px 10px;font-size:12px}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:6px 9px;max-width:100%}
+.main{flex:1;min-height:0;display:flex}.col{display:flex;flex-direction:column;min-width:0;min-height:0}
+#chat{flex:1;min-width:0;border-right:1px solid var(--bd);background:var(--pn)}#work{flex:0 0 33.333%;min-width:0}
+.row{display:flex;gap:6px;padding:8px;align-items:center;flex-wrap:wrap}
+.msgs{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.m{padding:8px 11px;border-radius:10px;background:var(--bg);overflow-wrap:anywhere}
+.m.user{background:var(--ac);color:#fff;align-self:flex-end;max-width:92%}.m.er{border:1px solid var(--bad)}
+.chip{display:inline-block;border:1px solid var(--bd);border-radius:6px;padding:0 6px;font-size:12px;background:var(--pn)}
+code{background:var(--pn);padding:0 4px;border-radius:4px}
+.comp{display:flex;gap:6px;padding:8px;border-top:1px solid var(--bd)}.comp textarea{flex:1;resize:none}
+.pane{flex:1;min-height:0;display:flex}iframe{flex:1;border:0;background:#fff;width:100%}
+.code{flex:1;display:flex;min-width:0}.fl{display:flex;flex-direction:column;gap:4px;padding:8px;border-right:1px solid var(--bd);overflow:auto;width:112px}
+#ed{flex:1;border-radius:0;border:0;font:12px/1.5 ui-monospace,monospace;resize:none;white-space:pre}
+.dash{padding:16px;max-width:980px;margin:0 auto;width:100%;overflow:auto}.wide{width:100%}
+.card2{border:1px solid var(--bd);border-radius:10px;background:var(--pn);margin:6px 0}
+.ctr{flex:1;display:grid;place-items:center;padding:16px}
+.card{background:var(--pn);border:1px solid var(--bd);border-radius:14px;padding:22px;width:min(420px,100%);display:flex;flex-direction:column;gap:10px}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:8px;z-index:9;max-width:90%}
+.pad{padding:16px}.adm{background:var(--ac);color:#fff;border:1px solid var(--ac);border-radius:99px;padding:3px 10px;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}.grid .card2{margin:0;display:flex;flex-direction:column;gap:4px}#stage{position:relative;flex:1;min-width:0;min-height:0;overflow:hidden}#dev iframe{width:100%;height:100%;display:block;border:0;background:#fff}.fs{position:fixed;inset:0;z-index:20;background:var(--bg);width:auto!important;flex:none!important;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}.tg{display:inline-flex}.tg .tb:first-child{border-radius:8px 0 0 8px}.tg .tb:last-child{border-radius:0 8px 8px 0;padding:5px 8px;border-left:0}#sy{max-height:40%;overflow:auto}
+@media(max-width:800px){.main{flex-direction:column}#chat{width:100%;flex:1;border-right:0}#work{flex:0 0 33.333%}}
+</style></head><body><div id="app"></div>
+<script>
+const $=s=>document.querySelector(s),uid=()=>Math.random().toString(36).slice(2,9);
+const L=(k,d)=>{try{const v=localStorage.getItem('fg:'+k);return v?JSON.parse(v):d}catch(e){return d}};
+const W=(k,v)=>{try{localStorage.setItem('fg:'+k,JSON.stringify(v))}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const g=i=>(($('#'+i)||{}).value||'').trim();
+const H=async s=>[...new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s)))].map(b=>b.toString(16).padStart(2,'0')).join('');
+const code=()=>[...crypto.getRandomValues(new Uint8Array(12))].map(b=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b%32]).join('').match(/.{4}/g).join('-');
+const PS={OpenAI:['https://api.openai.com/v1','gpt-4o'],OpenRouter:['https://openrouter.ai/api/v1','openai/gpt-4o-mini'],Groq:['https://api.groq.com/openai/v1','llama-3.3-70b-versatile'],DeepSeek:['https://api.deepseek.com/v1','deepseek-chat'],Gemini:['https://generativelanguage.googleapis.com/v1beta/openai','gemini-2.0-flash'],Custom:['','']};
+const SYS=`You are Forge, a senior full-stack engineer and technical advisor inside a browser-based app builder, working the way Bolt does. Be precise, professional and detailed.
+When asked to build or change something: (1) restate the goal and give a short numbered plan; (2) output every created or changed file in full, as <file path="index.html">…complete contents…</file> (never placeholders or diffs); (3) finish with "Notes & next steps": key design decisions, risks, and 2-4 concrete improvements.
+When the user asks for advice or wants to discuss the project, answer in depth and do not emit file tags.
+Runtime: a static sandboxed preview. Use plain HTML, CSS and JavaScript with no build step. index.html is the entry point; other files are referenced with relative paths. Keep existing files unless told otherwise.
+Responsive by default: every project must work on phones, tablets and desktops — include <meta name="viewport" content="width=device-width, initial-scale=1">, mobile-first CSS with flexbox/grid, fluid units and clamp(), touch-friendly controls (44px targets), pointer and touch input for games, and handle resize and orientation changes (for three.js update renderer size and camera aspect, cap devicePixelRatio at 2).
+3D games: use three.js r128 via <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>. Use a THREE.Clock and requestAnimationFrame with delta-time, a responsive renderer, lighting, animated meshes (rotation, bobbing, particles, camera motion), keyboard and touch controls, score, game-over and restart. Do not use CapsuleGeometry or OrbitControls (not in r128). No external assets: build everything from primitives.`;
+let S={mode:'in',view:'build',tab:'pv',busy:0,q:''},D=null,cfg=L('cfg',{on:true}),U=L('users',[]);
+const me=()=>U.find(x=>x.u===S.user),P=()=>D.pr.find(p=>p.id===S.pid),C=()=>D.ch.find(c=>c.id===S.cid);
+const save=()=>W('d:'+S.user,D);
+const fo=()=>D.fo||(D.fo={chains:[{id:'main',name:'Default chain',ids:D.eng.map(e=>e.id)}],act:'main',cool:60,min:0,r:{quota:1,rate:1,server:1,net:1,auth:1}});
+const ch0=()=>{const f=fo();return f.chains.find(c=>c.id==f.act)||f.chains[0]};
+const chain=()=>ch0().ids.map(i=>D.eng.find(e=>e.id==i)).filter(Boolean);
+const ok0=e=>e.on&&e.credits>fo().min&&e.cool<Date.now()&&kr(e).status!='bad'&&(e.builtin||!!kr(e).key);
+const cr=()=>chain().filter(e=>e.on).reduce((a,e)=>a+e.credits,0),ae=()=>chain().find(ok0);
+{const t=L('theme',null);if(t)document.documentElement.dataset.theme=t}
+function toast(t){const e=document.createElement('div');e.className='toast';e.textContent=t;document.body.appendChild(e);setTimeout(()=>e.remove(),4500)}
+function nc0(){const c={id:uid(),pid:S.pid,t:'New chat',m:[],d:''};D.ch.push(c);S.cid=c.id;return c.id}
+function np0(){const p={id:uid(),name:'Project '+(D.pr.length+1),files:{}};D.pr.push(p);S.pid=p.id;nc0()}
+function load(u){S.user=u;W('sess',u);D=L('d:'+u,null);if(!D){D={eng:[{id:'claude',name:'Claude (built-in)',builtin:1,on:1,credits:100,cost:1,cool:0}],pr:[],ch:[]};np0();save()}
+ mig();S.pid=D.pr[0].id;S.cid=(D.ch.find(c=>c.pid==S.pid)||{}).id||nc0()}
+const md=s=>esc(s.replace(/<file path="([^"]+)">[\s\S]*?(<\/file>|$)/g,(m,p)=>'\n§'+p+'§\n')).replace(/§([^§]+)§/g,'<span class=chip>📄 $1</span>').replace(/^#{1,4} (.*)$/gm,'<b>$1</b>').replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\n/g,'<br>');
+function doc(p){let h=p.files['index.html'];if(!h)return'<body style="font:14px system-ui;color:#888;display:grid;place-items:center;height:100vh;margin:0">Nothing to preview yet — describe what you want to build, or load the demo from the chat panel.';
+ h=h.replace(/<link[^>]+href="([^"]+\.css)"[^>]*>/g,(m,f)=>p.files[f]!=null?'<style>'+p.files[f]+'</style>':m);
+ return h.replace(/<script([^>]*?)src="([^"]+)"([^>]*)><\/script>/g,(m,a,f,b)=>p.files[f]!=null?'<script'+a+b+'>'+p.files[f].replace(/<\/script>/g,'<\\/script>')+'<\/script>':m)}
+const DEMO=`<!DOCTYPE html><html><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><style>html,body{margin:0;height:100%;overflow:hidden;touch-action:none;background:#0b0b1a;font:15px system-ui;color:#fff}#h{position:fixed;top:10px;left:12px;z-index:2}</style></head><body><div id=h>Loading…</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>
+<script>
+if(!window.THREE){document.getElementById('h').textContent='three.js failed to load (network or security policy).'}else{
+const sc=new THREE.Scene();sc.background=new THREE.Color(0x0b0b1a);sc.fog=new THREE.Fog(0x0b0b1a,12,40);
+const cam=new THREE.PerspectiveCamera(60,innerWidth/innerHeight,.1,100);cam.position.set(0,4,8);
+const r=new THREE.WebGLRenderer({antialias:true});r.setPixelRatio(Math.min(devicePixelRatio||1,2));r.setSize(innerWidth,innerHeight);document.body.appendChild(r.domElement);
+sc.add(new THREE.AmbientLight(0xffffff,.5));const dl=new THREE.DirectionalLight(0xffffff,.9);dl.position.set(3,8,5);sc.add(dl);
+const pl=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshStandardMaterial({color:0x4f8cff}));sc.add(pl);
+const grid=new THREE.GridHelper(60,60,0x4f8cff,0x222244);sc.add(grid);
+const obs=[],clk=new THREE.Clock(),keys={};let x=0,score=0,dead=0,spawn=0,tx=null;
+addEventListener('pointermove',e=>{if(e.pointerType=='touch'||e.buttons)tx=(e.clientX/innerWidth-.5)*12});addEventListener('keydown',e=>{keys[e.key]=1;tx=null});addEventListener('keyup',e=>keys[e.key]=0);
+addEventListener('click',()=>{window.focus();if(dead){obs.splice(0).forEach(o=>sc.remove(o));score=0;dead=0;x=0}});
+addEventListener('resize',()=>{r.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()});
+(function loop(){requestAnimationFrame(loop);const dt=Math.min(clk.getDelta(),.05),t=clk.elapsedTime;
+if(!dead){x+=((keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0))*9*dt;if(tx!=null)x+=(tx-x)*Math.min(1,dt*8);x=Math.max(-6,Math.min(6,x));
+spawn-=dt;if(spawn<0){spawn=.6;const o=new THREE.Mesh(new THREE.OctahedronGeometry(.6),new THREE.MeshStandardMaterial({color:0xff5577}));o.position.set((Math.random()-.5)*12,.7,-30);sc.add(o);obs.push(o)}
+for(let i=obs.length-1;i>=0;i--){const o=obs[i];o.position.z+=(10+score/5)*dt;o.rotation.x+=3*dt;o.rotation.y+=2*dt;if(Math.abs(o.position.z)<.9&&Math.abs(o.position.x-x)<1)dead=1;if(o.position.z>8){sc.remove(o);obs.splice(i,1)}}
+score+=dt*10;grid.position.z=(grid.position.z+10*dt)%1}
+pl.position.set(x,.5+Math.sin(t*5)*.12,0);pl.rotation.y+=2*dt;
+cam.position.x+=(x*.5-cam.position.x)*Math.min(1,dt*3);cam.lookAt(cam.position.x,0,-4);
+document.getElementById('h').textContent=dead?'Game over — click to restart ('+Math.floor(score)+')':'Score '+Math.floor(score)+' — drag/touch, or use ← → / A D';
+r.render(sc,cam)})()}
+<\/script></body></html>`;
+/* ---------- screens ---------- */
+function R(){const a=$('#app');
+ if(!S.user){const m=S.mode,t=(k,l)=>`<button class="tb ${m==k?'on':''}" data-a=mode data-v=${k}>${l}</button>`;
+  a.innerHTML=`<div class=ctr><div class=card><h2 style="margin:0">⚡ Forge</h2><div class=mu>Describe it. Build it. Preview it. Download it.</div><div class=row style="padding:0">${t('in','Sign in')}${t('up','Create account')}${t('rec','Recover')}</div>
+  <input id=u placeholder=Username autocomplete=username>${m=='rec'?'<input id=rc placeholder="Recovery code (XXXX-XXXX-XXXX)"><input id=np type=password placeholder="New password">':'<input id=p type=password placeholder=Password>'}
+  <button class="b pri" data-a=go>${m=='in'?'Sign in':m=='up'?'Create account':'Reset password'}</button><div id=er class=bad></div>${m=='up'?'<div class=mu>The first account created is the administrator.</div>':''}${!cfg.on?'<div class=mu>Forge is currently paused for regular users.</div>':''}</div></div>`;return}
+ if(S.rc){a.innerHTML=`<div class=ctr><div class=card><h2 style="margin:0">Your recovery code</h2><div class=mu>Store this somewhere safe. It is the only way to regain access if you forget your password, and it is shown just once.</div><h2 style="letter-spacing:2px;text-align:center">${S.rc}</h2><button class="b pri" data-a=rcok>I’ve saved it</button></div></div>`;return}
+ if(!cfg.on&&!me().admin){a.innerHTML=`<div class=ctr><div class=card><h2 style="margin:0">Forge is paused</h2><div class=mu>The administrator has switched the app off for now. Your projects and chats are safe and will be here when it returns.</div><button class=b data-a=out>Sign out</button></div></div>`;return}
+ a.innerHTML=topbar()+(S.view=='build'?`<div class=main><section class=col id=chat><div class=row><select id=ps data-c=proj></select><button class=b data-a=np>+ Project</button><button class=b data-a=nc>+ Chat</button><button class=b data-a=sync title="Link chats and projects">⇄ Sync</button><button class=b data-a=xp title="Remove this project">🗑 Project</button></div><div class=row id=ct style="padding-top:0"></div><div id=sy></div><div id=msgs class=msgs></div><div class=comp><textarea id=ta rows=3 placeholder="Ask for an app, a 3D game, or advice…"></textarea><button class="b pri" id=sb data-a=send>Send</button></div></section>
+ <section class=col id=work><div class=row><button class=tb data-a=tab data-v=pv>Preview</button><button class=tb data-a=tab data-v=code>Code</button><span class=sp></span><button class=b data-a=rl>↻ Reload</button><button class=b data-a=dl title="Complete project: all files, README, package.json, a standalone page and the build log">⬇ Download .zip</button></div><div id=dv class=row style="padding-top:0"></div><div id=pane class=pane></div></section></div>`:dash());
+ if(S.view=='build'){setTa();upd()}else pre()}
+const topbar=()=>`<div class=bar><b>⚡ Forge</b><button class="b ${S.view=='build'?'on':''}" data-a=view data-v=build>Builder</button><button class="b ${S.view=='dash'?'on':''}" data-a=view data-v=dash>Dashboard</button><span class=sp></span>${me().admin?`<button class=adm data-a=gadm title="Open the admin panel">👑 ${esc(S.user)} · Admin — full control</button>`:`<span class=chip2>👤 ${esc(S.user)}</span>`}<span class=chip2>◎ ${cr().toFixed(1)} credits</span><span class="chip2 mu">${ae()?'Engine: '+esc(ae().name):'No engine available'}</span>${me().admin?`<button class="b ${cfg.on?'ok':'bad'}" data-a=pow>Users: ${cfg.on?'ON':'OFF'}</button>`:''}<button class=b data-a=theme>◐</button><button class=b data-a=out>Sign out</button></div>`;
+const tb=()=>{const b=$('.bar');if(b)b.outerHTML=topbar()};
+const setTa=()=>{const t=$('#ta');if(t)t.value=(C()||{}).d||''};
+function upd(){const p=P(),c=C();
+ $('#ps').innerHTML=D.pr.map(x=>`<option value=${x.id} ${x.id==S.pid?'selected':''}>${esc(x.name)}</option>`).join('');
+ $('#ct').innerHTML=D.ch.filter(x=>x.pid==S.pid).map(x=>`<span class=tg><button class="tb ${x.id==S.cid?'on':''}" data-a=oc data-v=${x.id}>${esc(x.t)}</button><button class=tb data-a=xc data-v=${x.id} title="Remove this chat">×</button></span>`).join('');$('#sy').innerHTML=S.sy?syn():'';
+ const ex=['Build a 3D space-runner game with animations','Create a landing page for a SaaS product','Make a todo app with filters','Review my project and suggest improvements'];
+ const m=$('#msgs');m.innerHTML=(c.m.length?c.m.map(x=>`<div class="m ${x.r}${x.err?' er':''}">${x.r=='user'?esc(x.c).replace(/\n/g,'<br>'):md(x.c)}${x.e?`<div class=mu>via ${esc(x.e)}</div>`:''}</div>`).join(''):`<div class=mu>What would you like to build? Try one of these, or ask me for advice on your project.</div>`+ex.map(t=>`<button class=b data-a=ex data-v="${esc(t)}">${t}</button>`).join('')+'<button class="b pri" data-a=demo>▶ Load a demo 3D game (works without an engine)</button>')+(S.busy?'<div class="m mu">Thinking…</div>':'');
+ m.scrollTop=m.scrollHeight;$('#sb').disabled=!!S.busy;pane();tb()}
+function pane(){const p=P(),el=$('#pane'),dv=$('#dv'),wk=$('#work');if(dv)dv.innerHTML=S.tab=='pv'?devbar():'';if(wk)wk.classList.toggle('fs',!!S.fs);document.querySelectorAll('[data-a=tab]').forEach(b=>b.classList.toggle('on',b.dataset.v==S.tab));
+ if(S.tab=='pv'){let f=$('#fr');if(!f){el.innerHTML='<div id=stage><div id=dev><iframe id=fr sandbox="allow-scripts allow-pointer-lock allow-modals"></iframe></div></div>';f=$('#fr');S.last=null;if(ro)ro.observe($('#stage'))}const d=doc(p);if(d!==S.last){f.srcdoc=d;S.last=d}fit()}
+ else{const fl=Object.keys(p.files);if(!fl.includes(S.file))S.file=fl[0];S.last=null;
+  el.innerHTML=fl.length?`<div class=code><div class=fl>${fl.map(f=>`<button class="tb ${f==S.file?'on':''}" data-a=file data-v="${esc(f)}">${esc(f)}</button>`).join('')}</div><textarea id=ed spellcheck=false>${esc(p.files[S.file])}</textarea></div>`:'<div class="mu pad">No files yet.</div>'}}
+let LIVE=L('live',[]);
+const mk=(prov,url,rows)=>rows.map(([id,name,ctx,tier,tags])=>({prov,url,id,name,ctx,tier,tags:tags.split(' ')}));
+const CAT=[...mk('OpenAI','https://api.openai.com/v1',[['gpt-5','GPT-5',400,2,'reasoning code vision tools'],['gpt-5-mini','GPT-5 mini',400,1,'fast code vision tools'],['gpt-4.1','GPT-4.1',1000,2,'code long vision tools'],['gpt-4.1-mini','GPT-4.1 mini',1000,1,'fast long code tools'],['gpt-4o','GPT-4o',128,2,'fast vision tools'],['gpt-4o-mini','GPT-4o mini',128,1,'fast vision tools'],['o4-mini','o4-mini',200,2,'reasoning code tools']]),
+...mk('Anthropic','https://api.anthropic.com/v1',[['claude-opus-5-5','Claude Opus 5.5',0,3,'reasoning code vision tools'],['claude-sonnet-5-5','Claude Sonnet 5.5',0,2,'reasoning code vision tools'],['claude-haiku-5-5','Claude Haiku 5.5',0,1,'fast code vision tools']]),
+...mk('Google','https://generativelanguage.googleapis.com/v1beta/openai',[['gemini-2.5-pro','Gemini 2.5 Pro',1000,2,'reasoning code vision long tools'],['gemini-2.5-flash','Gemini 2.5 Flash',1000,1,'fast reasoning vision long tools'],['gemini-2.0-flash','Gemini 2.0 Flash',1000,1,'fast vision long tools']]),
+...mk('DeepSeek','https://api.deepseek.com/v1',[['deepseek-chat','DeepSeek Chat',128,1,'code open tools'],['deepseek-reasoner','DeepSeek Reasoner',128,1,'reasoning open']]),
+...mk('Groq','https://api.groq.com/openai/v1',[['llama-3.3-70b-versatile','Llama 3.3 70B',128,1,'fast open code tools'],['llama-3.1-8b-instant','Llama 3.1 8B',128,1,'fast open']]),
+...mk('Mistral','https://api.mistral.ai/v1',[['mistral-large-latest','Mistral Large',128,2,'code tools'],['codestral-latest','Codestral',256,1,'fast code'],['mistral-small-latest','Mistral Small',128,1,'fast tools']]),
+...mk('xAI','https://api.x.ai/v1',[['grok-4','Grok 4',256,3,'reasoning code vision tools']])];
+const CAPS=[['reasoning','Reasoning'],['code','Coding'],['vision','Vision'],['tools','Tool use'],['fast','Fast'],['long','Long context (500K+)'],['open','Open weights']];
+const guess=id=>[/mini|flash|haiku|nano|instant|lite|small|8b/i.test(id)&&'fast',/(^|[-/])o\d|reason|think|r1|opus|sonnet|pro|gpt-5|grok-4/i.test(id)&&'reasoning',/code|coder/i.test(id)&&'code',/vision|4o|gemini|claude|gpt-4\.1|gpt-5|pixtral|llava/i.test(id)&&'vision',/llama|qwen|mistral|gemma|deepseek|gpt-oss|phi/i.test(id)&&'open'].filter(Boolean).concat('tools');
+const NONCHAT=/embed|whisper|tts|dall-e|gpt-image|imagen|moderation|audio|transcribe|realtime|davinci|babbage|rerank|guard|speech|veo|lyria/i;
+const kmods=()=>(D.keys||[]).filter(k=>k.status=='ok').flatMap(k=>k.models.filter(id=>S.nc||!NONCHAT.test(id)).map(id=>{const c=CAT.find(m=>m.id==id)||LIVE.find(m=>m.id==id);return{prov:k.prov,url:k.url,id,name:c?c.name:id,ctx:c?c.ctx:0,tier:c?c.tier:2,tags:c?c.tags:guess(id),kid:k.id,kname:k.name}}));
+const mods=()=>S.mf&&S.mf.src=='cat'?[...CAT,...LIVE]:kmods(),cx=c=>!c?'—':c>=1000?+(c/1000).toFixed(2)+'M':c+'K';
+const chip=(k,v,l,on)=>`<button class="tb ${on?'on':''}" data-a=mf data-k=${k} data-v="${esc(v)}">${esc(l)}</button>`;
+function mflt(all){const f=S.mf,q=f.q.toLowerCase();return(all||mods()).filter(m=>(!q||(m.name+' '+m.id+' '+m.prov+' '+m.tags.join(' ')).toLowerCase().includes(q))&&(!f.prov.length||f.prov.includes(m.prov))&&f.cap.every(c=>m.tags.includes(c))&&(!f.tier.length||f.tier.includes(m.tier))&&(!f.ctx||m.ctx>=f.ctx))
+ .sort((a,b)=>f.sort=='ctx'?b.ctx-a.ctx:f.sort=='price'?a.tier-b.tier:f.sort=='name'?a.name.localeCompare(b.name):0)}
+function mres(){const all=mods(),r=mflt(all);
+ return`<p class=mu>${r.length} model${r.length==1?'':'s'} match</p><div class=grid>${r.slice(0,60).map(m=>`<div class=card2 style="padding:10px"><div class=row style="padding:0"><b>${esc(m.name)}</b><span class=sp></span><b>${'$'.repeat(m.tier)}</b></div><div class=mu style="overflow-wrap:anywhere"><span class=chip>${esc(m.prov)}</span>${m.kname?`<span class=chip>🔑 ${esc(m.kname)}</span>`:''} <code>${esc(m.id)}</code> · ${cx(m.ctx)} context</div><div class=row style="padding:4px 0">${m.tags.map(t=>`<span class=chip>${t}</span>`).join('')}</div><button class="b pri" data-a=use data-v="${esc((m.kid||'c:'+m.prov)+'|'+m.id)}">${m.kid?(D.eng.some(e=>e.keyId==m.kid&&e.model==m.id)?'✓ Added — click to remove':'+ Add as engine'):(D.eng.some(e=>e.model==m.id&&(e.prov==m.prov||kr(e).prov==m.prov))?'✓ In Engines — view':'+ Add as engine')}</button></div>`).join('')||(S.mf.src!='cat'&&!D.keys.some(k=>k.status=='ok')?'<p class=mu>No verified API key yet. Add one in the <b>API keys</b> tab and Forge will list exactly the models that key can use.</p><button class="b pri" data-a=dt data-v=keys>Go to API keys</button>':'<p class=mu>No models match these filters.</p>')}</div>${r.length>60?'<p class=mu>Showing the first 60 — narrow the filters to see the rest.</p>':''}`}
+function mfx(){const f=S.mf,pv=[...new Set(mods().map(m=>m.prov))],sel=(k,o)=>`<select data-m=${k}>${o.map(([v,l])=>`<option value=${v} ${f[k]==v?'selected':''}>${l}</option>`).join('')}</select>`;
+ return`<div class=card2><div class=row><b>Source</b>${chip('src','keys','My API keys (verified)',f.src!='cat')}${chip('src','cat','Catalog (unverified)',f.src=='cat')}${f.src!='cat'?`<label class=mu><input type=checkbox data-nc ${S.nc?'checked':''}> show non-chat models</label>`:''}</div><div class=row><b>Provider</b>${pv.map(x=>chip('prov',x,x,f.prov.includes(x))).join('')}</div><div class=row><b>Capabilities</b>${CAPS.map(([k,l])=>chip('cap',k,l,f.cap.includes(k))).join('')}</div>
+ <div class=row><b>Price</b>${[1,2,3].map(t=>chip('tier',t,'$'.repeat(t),f.tier.includes(t))).join('')}<b style="margin-left:10px">Min context</b>${sel('ctx',[[0,'Any'],[128,'128K+'],[256,'256K+'],[500,'500K+'],[1000,'1M+']])}<b style="margin-left:10px">Sort</b>${sel('sort',[['rel','Featured'],['ctx','Context'],['price','Price'],['name','Name']])}<span class=sp></span><button class=b data-a=mclr>Clear filters</button></div></div><div id=mr>${mres()}</div>`}
+const mod=()=>{S.mf=S.mf||{q:'',prov:[],cap:[],tier:[],ctx:0,sort:'rel',src:'keys'};const c=S.mf.src=='cat';return`<h3 style="margin-top:0">AI model search</h3><div class=row style="padding-left:0"><input id=mq style="flex:1;min-width:200px" placeholder="Search by name, model ID, provider or capability…" value="${esc(S.mf.q)}">${c?'<button class=b data-a=live>↻ Load live catalog (OpenRouter)</button>':'<button class=b data-a=vall>↻ Re-verify all keys</button>'}</div>
+ <div id=mst class=mu>${c?(LIVE.length?LIVE.length+' live models loaded. ':'Built-in starter catalog — not tied to your keys, so some models may not be available to you. ')+'Adding a model creates an engine; it activates once an API key for that provider is linked.':'These models come straight from your verified API keys — only what your keys can really use. Capability tags and price tiers are estimates (per 1M tokens: $ under $1, $$ under $5, $$$ above).'}</div><div id=mfx>${mfx()}</div>`};
+async function live(){const st=$('#mst');st.textContent='Loading…';
+ try{const r=await pf('https://openrouter.ai/api/v1/models');if(!r.ok)throw 0;const j=await r.json();
+  LIVE=j.data.slice(0,400).map(m=>{const pp=m.pricing||{},av=((+pp.prompt||0)+(+pp.completion||0))*500000,c=Math.round((m.context_length||0)/1000),ps=m.supported_parameters||[],id=m.id,im=((m.architecture||{}).input_modalities||[]).join();
+   return{prov:'OpenRouter',url:'https://openrouter.ai/api/v1',id,name:m.name||id,ctx:c,tier:av<1?1:av<5?2:3,tags:[im.includes('image')&&'vision',ps.includes('reasoning')&&'reasoning',ps.includes('tools')&&'tools',c>=500&&'long',/mini|flash|haiku|nano|instant|lite/i.test(id)&&'fast',/code/i.test(id)&&'code',/llama|qwen|mistral|gemma|deepseek|gpt-oss/i.test(id)&&'open'].filter(Boolean)}});
+  W('live',LIVE);S.mf.prov=[];$('#mfx').innerHTML=mfx();$('#mst').textContent=LIVE.length+' live models loaded from OpenRouter.'}
+ catch(e){st.textContent='Could not reach OpenRouter from this page (network or security policy), so the built-in catalog is shown. Run Forge from your own host to load the live list.'}}
+const pre=()=>{};
+function adm(){return`${S.note?`<div class=card2 style="padding:10px"><b style="overflow-wrap:anywhere">${esc(S.note)}</b> <button class=b data-a=nx>Dismiss</button></div>`:''}<div class=card2 style="padding:12px;border-color:var(--ac)"><b>👑 Administrator — full control</b><div class=mu>You can manage every account, switch Forge on or off for users, and use all engines, failover chains, projects and backups. Admins are never locked out.</div></div>
+ <div class=row style="padding-left:0"><b>App access for users:</b><button class="b ${cfg.on?'ok':'bad'}" data-a=pow>${cfg.on?'ON — click to pause':'OFF — click to resume'}</button></div>
+ <h3>Add a user</h3><div class=row style="padding-left:0"><input id=nu placeholder=Username><input id=np2 type=password placeholder="Password (6+)"><label><input type=checkbox id=nadm> Admin</label><button class="b pri" data-a=uadd>Create</button></div>
+ <h3>Accounts (${U.length})</h3>${U.map(x=>`<div class=card2><div class=row><b>${esc(x.u)}</b><span class=chip>${x.admin?'👑 admin':'user'}</span>${x.off?'<span class="chip bad">suspended</span>':''}${x.u==S.user?'<span class=mu>(you)</span>':''}<span class=sp></span><button class=b data-a=urole data-v="${esc(x.u)}">${x.admin?'Remove admin':'Make admin'}</button><button class=b data-a=usus data-v="${esc(x.u)}">${x.off?'Reactivate':'Suspend'}</button><button class=b data-a=upw data-v="${esc(x.u)}">Reset password</button><button class=b data-a=udel data-v="${esc(x.u)}">Delete</button></div></div>`).join('')}`}
+const PR={OpenAI:{url:'https://api.openai.com/v1',kind:'openai'},Anthropic:{url:'https://api.anthropic.com/v1',kind:'anthropic'},Google:{url:'https://generativelanguage.googleapis.com/v1beta/openai',kind:'openai'},OpenRouter:{url:'https://openrouter.ai/api/v1',kind:'openai'},Groq:{url:'https://api.groq.com/openai/v1',kind:'openai'},DeepSeek:{url:'https://api.deepseek.com/v1',kind:'openai'},Mistral:{url:'https://api.mistral.ai/v1',kind:'openai'},xAI:{url:'https://api.x.ai/v1',kind:'openai'},Custom:{url:'',kind:'openai'}};
+const kr=e=>(D.keys||[]).find(k=>k.id==e.keyId)||(e.key?{key:e.key,url:e.url,kind:'openai',name:'legacy key',prov:'Custom',status:'unknown'}:{});
+function mig(){D.keys=D.keys||[];D.eng.forEach(e=>{if(!e.builtin&&!e.keyId&&e.key){let k=D.keys.find(x=>x.key==e.key&&x.url==e.url);if(!k){k={id:uid(),name:e.name+' key',prov:'Custom',url:e.url,kind:'openai',key:e.key,status:'unknown',models:[]};D.keys.push(k)}e.keyId=k.id;delete e.key;delete e.url}})}
+function addEng(kid,model,name,prov){const c=ch0(),id=uid();D.eng.push({id,name:name||model,keyId:kid||undefined,prov:prov||(D.keys.find(k=>k.id==kid)||{}).prov,model,on:1,credits:100,cost:[0.3,1,3][((CAT.find(m=>m.id==model)||{}).tier||2)-1],cool:0});c.ids.push(id);save();tb();return id}
+function delE(id){D.eng=D.eng.filter(e=>e.id!=id);fo().chains.forEach(c=>c.ids=c.ids.filter(i=>i!=id));save();tb()}
+const pf=(u,o={})=>{const px=String(L('proxy','')||'').trim();return px?fetch(px,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:u,method:o.method||'GET',headers:o.headers||{},body:o.body||null})}):fetch(u,o)};
+const PROXY_CODE=`export default {async fetch(req){
+ const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'POST,OPTIONS'};
+ if(req.method==='OPTIONS')return new Response(null,{headers:cors});
+ const {url,method,headers,body}=await req.json(),u=new URL(url);
+ const ok=['api.openai.com','api.anthropic.com','generativelanguage.googleapis.com','openrouter.ai','api.groq.com','api.deepseek.com','api.mistral.ai','api.x.ai'];
+ if(u.protocol!=='https:'||!ok.includes(u.hostname))return new Response('host not allowed',{status:403,headers:cors});
+ const r=await fetch(url,{method,headers,body:method==='GET'?undefined:body});
+ return new Response(r.body,{status:r.status,headers:{...cors,'Content-Type':r.headers.get('Content-Type')||'application/json'}});
+}}`;
+const proxyB=()=>`<div class=card2 style="padding:10px"><b>Backend proxy (optional)</b><div class=mu>If your host blocks direct calls to AI providers, route every key check, model list, test and chat through a small function on a backend you control. Forge sends it {url, method, headers, body} as JSON and returns the provider’s response. Don’t use public CORS proxies — they would see your API keys.</div><div class=row style="padding:6px 0 0"><input id=px placeholder="https://your-backend.example/functions/forge-proxy" style="flex:1;min-width:220px" value="${esc(L('proxy',''))}"><button class="b pri" data-a=pxsave>Save</button>${L('proxy','')?'<button class=b data-a=pxclr>Disable</button>':''}</div><details><summary class=mu>Proxy function code (Base44 backend function, Cloudflare Worker or similar)</summary><textarea readonly rows=12 style="width:100%;font:12px/1.4 ui-monospace,monospace">${esc(PROXY_CODE)}</textarea></details></div>`;
+async function verify(id,q){const k=D.keys.find(x=>x.id==id);if(!k)return;k.status='checking';k.err='';if(!q&&S.view=='dash')rd();
+ try{const an=k.kind=='anthropic',r=await pf(k.url.replace(/\/$/,'')+'/models'+(an?'?limit=1000':''),{headers:an?{'x-api-key':k.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'}:{Authorization:'Bearer '+k.key}}).catch(()=>{throw{st:0,m:'Network blocked or unreachable — this page may not be allowed to contact the provider.'}});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw{st:r.status,m:typeof j.error=='string'?j.error:(j.error&&j.error.message)||r.statusText};
+  const a=j.data||j.models||[];k.models=[...new Set(a.map(m=>String(m.id||m.name||'').replace(/^models\//,'')).filter(Boolean))].sort();k.status='ok';k.err=''}
+ catch(x){const bad=x.st==401||x.st==403;k.status=bad?'bad':'err';k.err=bad?'The provider rejected this key ('+x.st+').':x.m||'error';if(bad)k.models=[]}
+ k.at=Date.now();save();if(!q&&S.view=='dash')rd()}
+async function netTest(){S.net='Testing…';S.netok=null;if(S.view=='dash'&&S.dt=='keys')rd();let n=0;for(const u of ['https://openrouter.ai/api/v1/models','https://api.openai.com/v1/models','https://api.anthropic.com/v1/models']){try{await pf(u);n++}catch(e){}}S.netok=n>0;S.net=n+' of 3 provider endpoints reachable';if(S.view=='dash'&&S.dt=='keys')rd()}
+const netB=()=>{const o=S.netok;return`<div class=card2 style="padding:10px;border-color:${o===false?'var(--bad)':o?'var(--ok)':'var(--bd)'}"><b>${o===false?'Provider connections are blocked in this view':o?'Live — provider connections are open':'Checking provider connections…'}</b>${o===false?'<div class=mu>This page’s host only lets it reach a few script hosts, so calls to OpenAI, Anthropic, Google and other providers fail whatever the app does, and the page itself cannot lift that. Fix: set the backend proxy below (a function on a backend you control that this page is allowed to call), or open the downloaded forge.html in your own browser. The built-in Claude engine still works here.</div>':o?'<div class=mu>Keys are verified and engines run directly against the providers.</div>':''}<div class=row style="padding:6px 0 0"><button class=b data-a=net>Test connection</button><span class=mu>${esc(S.net||'')}</span></div></div>`};
+async function vallKeys(){if(S.vb)return;const ks=D.keys.filter(k=>k.key);if(!ks.length)return toast('No API keys to verify.');S.vb='k';rd();toast('Verifying '+ks.length+' key(s)…');await Promise.all(ks.map(k=>verify(k.id,1)));S.vb=null;const n=ks.filter(k=>k.status=='ok').length;toast(n+' of '+ks.length+' key(s) verified'+(n<ks.length?' — see the errors on the others.':'.'));rd()}
+async function chk(e,skipV){const k=kr(e),f=(ok,msg)=>{e.chk={ok,msg,at:Date.now()};if(ok)e.cool=0};
+ if(!e.builtin){if(!k.key)return f(0,'no API key linked');if(!skipV&&k.status!='ok')await verify(k.id,1);
+  if(k.status=='bad')return f(0,'API key rejected');if(k.status=='ok'&&!k.models.includes(e.model))return f(0,'model not listed by this key')}
+ try{await call(e,[{role:'system',content:'Reply with the single word OK.'},{role:'user',content:'ping'}]);f(1,'responded')}catch(x){f(0,x.m||'error')}}
+async function vallEng(){if(S.vb)return;if(!D.eng.length)return toast('No engines to verify.');S.vb='e';rd();toast('Verifying '+D.eng.length+' engine(s)…');
+ await Promise.all([...new Set(D.eng.map(e=>e.keyId).filter(Boolean))].map(id=>verify(id,1)));await Promise.all(D.eng.map(e=>chk(e,1)));S.vb=null;save();const n=D.eng.filter(e=>e.chk&&e.chk.ok).length;toast(n+' of '+D.eng.length+' engine(s) live'+(n<D.eng.length?' — see the red ones.':'.'));rd()}
+const kst=k=>k.status=='ok'?['ok','✓ verified · '+k.models.length+' models']:k.status=='bad'?['bad','✗ invalid key']:k.status=='checking'?['mu','checking…']:k.status=='err'?['bad','could not verify']:['mu','not verified'];
+const kml=k=>{const q=(S.kq||'').toLowerCase();return k.models.filter(id=>(S.nc||!NONCHAT.test(id))&&(!q||id.toLowerCase().includes(q))).map(id=>{const e=D.eng.find(x=>x.keyId==k.id&&x.model==id);return`<div class=row><code style="overflow-wrap:anywhere">${esc(id)}</code><span class=sp></span><button class="b ${e?'':'pri'}" data-a=kuse data-k=${k.id} data-v="${esc(id)}">${e?'✓ Added — remove':'+ Add as engine'}</button></div>`}).join('')||'<div class="row mu">No models match.</div>'};
+const keyCard=k=>{const st=kst(k),ne=D.eng.filter(e=>e.keyId==k.id).length,open=S.ko==k.id&&k.status=='ok';
+ return`<div class=card2><div class=row><b>${esc(k.name)}</b><span class=chip>${esc(k.prov)}</span><span class=mu>••••${esc(k.key.slice(-4))}</span><span class="${st[0]}">${st[1]}</span><span class=sp></span><span class=mu>${ne} engine${ne==1?'':'s'}</span>${k.status=='ok'?`<button class=b data-a=kopen data-v=${k.id}>${open?'Hide models':'Models'}</button>`:''}<button class=b data-a=kver data-v=${k.id}>${k.status=='ok'?'Refresh':'Verify'}</button><button class=b data-a=ked data-v=${k.id}>${S.ke==k.id?'Close':'Edit'}</button><button class=b data-a=kdel data-v=${k.id}>Remove</button></div>${k.err?`<div class="row bad" style="padding-top:0;overflow-wrap:anywhere">${esc(k.err)}</div>`:''}
+ ${S.ke==k.id?`<div class=row data-kid=${k.id}><label class=mu>Label<br><input data-ke=name value="${esc(k.name)}"></label><label class=mu>Base URL<br><input data-ke=url value="${esc(k.url)}" size=30></label><label class=mu>Replace key<br><input data-ke=key type=password placeholder="blank keeps current"></label></div>`:''}
+ ${open?`<div class=row><input data-ms placeholder="Filter the ${k.models.length} models this key can use…" value="${esc(S.kq||'')}" style="flex:1;min-width:180px"><label class=mu><input type=checkbox data-nc ${S.nc?'checked':''}> show non-chat</label></div><div id=kl${k.id} style="max-height:280px;overflow:auto">${kml(k)}</div>`:''}</div>`};
+function keysT(){const kp=S.kpre;S.kpre=null;const pv=kp&&PR[kp.prov]?kp.prov:'OpenAI';
+ return netB()+proxyB()+`<h3 style="margin-top:0">Add an API key</h3><div class=row style="padding-left:0"><select id=kp data-c=kprov>${Object.keys(PR).map(x=>`<option ${x==pv?'selected':''}>${x}</option>`).join('')}</select><input id=kn placeholder="Label (optional)" size=14><input id=ku placeholder="Base URL" size=28 value="${esc(PR[pv].url)}"><input id=kk type=password placeholder="API key" size=24><button class="b pri" data-a=kadd>Add &amp; verify</button></div>
+ <p class=mu>Forge asks the provider which models this key can really use, and only those are offered as engines. Keys stay in this browser’s storage and are sent only to the provider you choose.</p>${D.keys.length?`<div class=row style="padding-left:0"><button class="b pri" data-a=vall ${S.vb?'disabled':''}>${S.vb=='k'?'Verifying…':'✓ Verify all keys'}</button><span class=mu>${D.keys.filter(k=>k.status=='ok').length} of ${D.keys.length} verified</span></div>`:''}${D.keys.map(keyCard).join('')||'<p class=mu>No API keys yet.</p>'}${D.keys.some(k=>k.status=='err')?'<p class=mu>If keys show “could not verify”, this hosted page’s security policy is probably blocking calls to providers. Open the downloaded forge.html in your own browser (or host it yourself) to verify keys and run engines.</p>':''}`}
+const mdl=k=>k?(k.models||[]).filter(id=>!NONCHAT.test(id)).map(id=>`<option value="${esc(id)}">`).join(''):'';
+const est=e=>e.credits<=0?'out':!e.on?'paused':e.cool>Date.now()?'cool':'ready';
+const engT=()=>`<h3 style="margin-top:0">Add an engine</h3>${D.keys.length?`<div class=row style="padding-left:0"><select id=ek2 data-c=ekey>${D.keys.map(k=>`<option value=${k.id}>${esc(k.name)} (${esc(k.prov)})</option>`).join('')}</select><input id=em2 list=dlm placeholder="Model your key supports" size=28><datalist id=dlm>${mdl(D.keys[0])}</datalist><input id=en2 placeholder="Name (optional)" size=14><input id=ec2 type=number placeholder=Credits value=100 style="width:90px"><input id=ex2 type=number placeholder="Cost / 1K" value=1 style="width:90px"><button class="b pri" data-a=eadd>Add</button></div><p class=mu>Suggestions are only the models your key reported. Keys that can’t be verified from here accept a typed model ID. Tip: the API keys tab adds engines in one click.</p>`:`<p class=mu>Engines run on API keys. <button class="b pri" data-a=dt data-v=keys>Add an API key first</button></p>`}
+ <div class=row style="padding-left:0"><input id=q style="flex:1;min-width:200px" placeholder="Search engines by name, model, provider or key…" value="${esc(S.q)}">${[['all','All'],['ready','Ready'],['out','Out of credits'],['paused','Paused']].map(([v,l])=>`<button class="tb ${(S.es||'all')==v?'on':''}" data-a=es data-v=${v}>${l}</button>`).join('')}<button class="b pri" data-a=veng ${S.vb?'disabled':''}>${S.vb=='e'?'Verifying…':'✓ Verify all engines'}</button></div><div id=list>${lst()}</div>`;
+const TABS=[['keys','API keys'],['eng','Engines'],['mo','Model search'],['fo','Failover'],['pj','Projects & chats'],['bk','Backup & admin']];
+const fld=(k,l,v,t)=>`<label class=mu>${l}<br><input data-e=${k} type=${t||'text'} value="${esc(v)}" ${t=='number'?'step=any style="width:110px"':''}></label>`;
+function engines(){const q=S.q.toLowerCase(),f=S.es||'all';
+ return D.eng.filter(e=>{const k=kr(e);return(!q||(e.name+' '+(e.model||'')+' '+(k.prov||'')+' '+(k.name||'')).toLowerCase().includes(q))&&(f=='all'||est(e)==f)}).map(e=>{const k=kr(e),sx=est(e),st=!e.builtin&&!k.key?['bad','needs an API key']:k.status=='bad'?['bad','key invalid']:sx=='out'?['bad','out of credits']:sx=='paused'?['bad','paused']:sx=='cool'?['bad','cooling '+Math.ceil((e.cool-Date.now())/1000)+'s']:['ok','ready'];
+ return`<div class=card2 style="${S.hl==e.id?'border-color:var(--ac);box-shadow:0 0 0 2px var(--ac)':''}"><div class=row><b>${esc(e.name)}</b><span class=mu>${e.builtin?'built-in':'🔑 '+esc(k.name||'no key linked — '+(e.prov||''))+' · '+esc(e.model)}</span><span class="${st[0]}">${st[1]}</span>${!e.builtin&&k.status=='ok'&&!k.models.includes(e.model)?'<span class="chip bad">model not listed by key</span>':''}${e.chk?`<span class="chip ${e.chk.ok?'ok':'bad'}" title="${esc(e.chk.msg)}">${e.chk.ok?'✓ live':'✗ '+esc(e.chk.msg)}</span>`:''}<span class=sp></span><b>${+e.credits.toFixed(2)} credits</b>${!e.builtin&&!k.key?`<button class="b pri" data-a=ekey data-v=${e.id}>Add key</button>`:''}<button class=b data-a=test data-v=${e.id}>Test</button><button class=b data-a=ed data-v=${e.id}>${S.ed==e.id?'Close':'Edit'}</button><button class=b data-a=tg data-v=${e.id}>${e.on?'Pause':'Enable'}</button>${e.builtin?'':`<button class=b data-a=de data-v=${e.id}>Remove</button>`}</div>
+ ${S.ed==e.id?`<div class=row data-id=${e.id}>${fld('name','Name',e.name)}${e.builtin?'':`<label class=mu>API key<br><select data-e=keyId>${e.keyId?'':'<option value="">— choose a key —</option>'}${D.keys.map(x=>`<option value=${x.id} ${x.id==e.keyId?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label><label class=mu>Model<br><input data-e=model list=dl${e.id} value="${esc(e.model)}" size=26><datalist id=dl${e.id}>${mdl(k)}</datalist></label>`}${fld('credits','Credits',+e.credits.toFixed(2),'number')}${fld('cost','Cost per 1K tokens',e.cost,'number')}</div>`:''}</div>`}).join('')||'<p class=mu>No engines match.</p>'}
+function pjl(){const q=S.q.toLowerCase(),h=s=>!q||s.toLowerCase().includes(q);
+ return D.pr.filter(p=>h(p.name)||D.ch.some(c=>c.pid==p.id&&h(c.t+' '+c.m.map(m=>m.c).join(' ')))).map(p=>`<div class=card2><div class=row><input data-p=${p.id} value="${esc(p.name)}" style="font-weight:600"><span class=mu>${Object.keys(p.files).length} files</span><span class=sp></span><button class=b data-a=op data-v=${p.id}>Open</button><button class=b data-a=dp data-v=${p.id}>Delete</button></div>${D.ch.filter(c=>c.pid==p.id).map(c=>`<div class=row><span class=mu>💬 ${esc(c.t)} · ${c.m.length} messages</span><span class=sp></span><button class=b data-a=oc data-v=${c.id}>Open</button><button class=b data-a=dc data-v=${c.id}>Delete</button></div>`).join('')}</div>`).join('')||'<p class=mu>No matches.</p>'}
+const lst=()=>S.dt=='pj'?pjl():engines();
+const srch=()=>`<input id=q class=wide placeholder="Search engines, projects and chat history…" value="${esc(S.q)}"><div id=list>${lst()}</div>`;
+function fot(){const f=fo(),c=ch0(),mem=chain(),rest=D.eng.filter(e=>!c.ids.includes(e.id));
+ return`<h3 style="margin-top:0">Failover chains</h3><p class=mu>The active chain is tried top to bottom. When an engine runs out of credits or fails (per the rules below), Forge moves to the next one automatically.</p>
+ <div class=row style="padding-left:0"><select data-c=chain>${f.chains.map(x=>`<option value=${x.id} ${x.id==f.act?'selected':''}>${esc(x.name)}${x.id==f.act?' (active)':''}</option>`).join('')}</select><button class=b data-a=nch>+ New chain</button><button class=b data-a=dch>Delete this chain</button></div>
+ <div class=card2><div class=row><label class=mu>Chain name <input data-k=cname value="${esc(c.name)}"></label></div>
+ ${mem.map((e,i)=>`<div class=row><span class=mu>${i+1}.</span><b>${esc(e.name)}</b><span class=mu>${+e.credits.toFixed(2)} credits</span><span class=sp></span><button class=b data-a=cu data-v=${e.id}>↑</button><button class=b data-a=cd data-v=${e.id}>↓</button><button class=b data-a=cx data-v=${e.id}>Remove</button></div>`).join('')||'<div class="row mu">This chain is empty — add an engine below.</div>'}
+ <div class=row>${rest.length?`<select id=cadd>${rest.map(e=>`<option value=${e.id}>${esc(e.name)}</option>`).join('')}</select><button class=b data-a=cad>+ Add engine to chain</button>`:'<span class=mu>Every engine is already in this chain.</span>'}</div></div>
+ <h3>Failover rules</h3><div class=card2><div class=row>${[['quota','Out of credits / quota (402)'],['rate','Rate limited (429)'],['server','Provider error (5xx)'],['net','Network error or blocked'],['auth','Invalid key (401/403)']].map(([k,l])=>`<label><input type=checkbox data-r=${k} ${f.r[k]?'checked':''}> ${l}</label>`).join('')}</div>
+ <div class=row><label class=mu>Cool-down after a failure (seconds) <input type=number data-fo=cool value=${f.cool} style="width:80px"></label><label class=mu>Skip engines with credits at or below <input type=number step=any data-fo=min value=${f.min} style="width:80px"></label></div></div>
+ <p class=mu>Now serving: <b>${ae()?esc(ae().name):'no engine available'}</b></p>`}
+function dash(){const t=S.dt||(S.dt='eng');let b;
+ if(t=='eng')b=engT();else if(t=='keys')b=keysT();
+ else if(t=='fo')b=fot();else if(t=='mo')b=mod();else if(t=='ad'&&me().admin)b=adm();else if(t=='pj')b=srch();
+ else b=`<h3 style="margin-top:0">Backup &amp; sync</h3><div class=row style="padding-left:0"><button class=b data-a=exp>Export backup</button><label class=b>Import<input id=imp type=file accept=.json hidden></label><span class=mu>Chats autosave on every keystroke and share their project’s files. Exports leave API keys out.</span></div>${me().admin?`<h3>Administration</h3><p class=mu>${U.length} registered account(s). Regular users can use Forge only while the top-bar switch is ON; admins are never locked out.</p>`:''}`;
+ return`<div class=dash><div class=row style="padding-left:0">${TABS.concat(me().admin?[['ad','👑 Admin']]:[]).map(([k,l])=>`<button class="tb ${t==k?'on':''}" data-a=dt data-v=${k}>${k=='eng'?l+' ('+D.eng.length+')':l}</button>`).join('')}</div>${b}</div>`}
+const rd=()=>{tb();const d=$('.dash');if(d){const y=d.scrollTop;d.outerHTML=dash();$('.dash').scrollTop=y}};
+/* ---------- engines & failover ---------- */
+const mg=a=>a.reduce((o,m)=>{const l=o[o.length-1];l&&l.role==m.role?l.content+='\n\n'+m.content:o.push({...m});return o},[]);
+async function call(e,msgs){
+ if(e.builtin){const s=window.claude&&await claude.use('sample');if(!s)throw{st:0,m:'built-in engine unavailable here'};
+  const h=mg(msgs.filter(m=>m.role!='system'));h[0].content=msgs[0].content+'\n\n---\n'+h[0].content;
+  try{const r=await s(h,{cache:false});return{text:r.text+(r.truncated?'\n\n⚠ The reply was cut off — type “continue” to get the rest.':'')}}catch(x){throw{st:x.code=='rate_limited'?429:0,m:x.message||x.code}}}
+ const K=kr(e);if(!K.key)throw{st:401,m:'no API key linked to this engine'};
+ if(K.kind=='anthropic'){const r=await pf(K.url.replace(/\/$/,'')+'/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':K.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:e.model,max_tokens:8192,system:msgs[0].content,messages:mg(msgs.slice(1))})}).catch(()=>{throw{st:0,m:'network blocked or unreachable'}});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw{st:r.status,m:(j.error&&j.error.message)||r.statusText};
+  return{text:j.content.map(c=>c.text||'').join('')+(j.stop_reason=='max_tokens'?'\n\n⚠ The reply was cut off — type “continue” to get the rest.':''),tok:j.usage&&j.usage.input_tokens+j.usage.output_tokens}}
+ const r=await pf(K.url.replace(/\/$/,'')+'/chat/completions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+K.key},body:JSON.stringify({model:e.model,messages:msgs})}).catch(()=>{throw{st:0,m:'network blocked or unreachable'}});
+ const j=await r.json().catch(()=>({}));if(!r.ok)throw{st:r.status,m:(j.error&&j.error.message)||r.statusText};
+ return{text:j.choices[0].message.content,tok:j.usage&&j.usage.total_tokens}}
+async function run(msgs){const tried=[];
+ for(;;){const e=chain().find(x=>ok0(x)&&!tried.includes(x.id));
+  if(!e)throw new Error('Every engine in the active failover chain is out of credits or unavailable. Add credits or engines in Dashboard → Failover.');
+  try{const r=await call(e,msgs);const tok=r.tok||Math.ceil((JSON.stringify(msgs).length+r.text.length)/4);e.credits=Math.max(0,e.credits-tok/1000*e.cost);save();return{...r,e}}
+  catch(x){tried.push(e.id);const m=x.m||'error',f=fo(),k=x.st==402||/quota|credit|billing|insufficient/i.test(m)?'quota':x.st==401||x.st==403?'auth':x.st==429?'rate':x.st>=500?'server':'net';
+  if(!f.r[k])throw new Error(e.name+' failed ('+m+') and failover is switched off for this error type.');
+  if(k=='quota')e.credits=0;else if(k=='auth'){e.on=0;const K=kr(e);if(K.id){K.status='bad';K.err=m}}else e.cool=Date.now()+f.cool*1000;save();toast(e.name+' failed ('+m+') — switching to the next engine')}}}
+function sys(){const p=P(),o=D.ch.filter(c=>c.pid==p.id&&c.id!=S.cid&&c.m.length).map(c=>`- "${c.t}": `+c.m.filter(m=>m.r=='user').slice(-3).map(m=>m.c.slice(0,160)).join(' | ')).join('\n');
+ const f=Object.entries(p.files).map(([k,v])=>`<file path="${k}">\n${v.slice(0,6000)}\n</file>`).join('\n');
+ const lc=D.ch.filter(x=>(C().sync||[]).includes(x.id)).map(x=>`- "${x.t}" (project ${(D.pr.find(y=>y.id==x.pid)||{}).name}): `+x.m.filter(m=>m.r=='user').slice(-3).map(m=>m.c.slice(0,160)).join(' | ')).join('\n'),lp=D.pr.filter(x=>(p.sync||[]).includes(x.id)).map(x=>`Linked project "${x.name}":\n`+Object.entries(x.files).map(([k,v])=>`--- ${k} ---\n${v.slice(0,3000)}`).join('\n')).join('\n');
+ return SYS+`\n\nProject: ${p.name}\nCurrent files:\n${f||'(none yet)'}\n\nOther chats connected to this project (shared context):\n${o||'(none)'}\n\nLinked chats from other projects:\n${lc||'(none)'}\n\nLinked projects (read-only reference, never output them as files):\n${lp||'(none)'}`}
+function apply(t){let n=0,re=/<file path="([^"]+)">\n?([\s\S]*?)<\/file>/g,m;while(m=re.exec(t)){P().files[m[1].trim()]=m[2].replace(/^```\w*\n/,'').replace(/\n```\s*$/,'');if(!n++)S.file=m[1].trim()}if(n)S.tab='pv'}
+async function send(){const t=$('#ta').value.trim();if(!t||S.busy)return;const c=C();c.m.push({r:'user',c:t});c.d='';$('#ta').value='';if(c.m.length==1)c.t=t.slice(0,36);S.busy=1;save();upd();
+ try{const r=await run([{role:'system',content:sys()},...c.m.filter(m=>!m.err).map(m=>({role:m.r,content:m.c}))]);apply(r.text);c.m.push({r:'assistant',c:r.text,e:r.e.name})}
+ catch(x){c.m.push({r:'assistant',c:'⚠ '+x.message,err:1})}
+ S.busy=0;save();if(S.user&&S.view=='build')upd()}
+const DEV={desk:['Desktop',1280,800],lap:['Laptop',1024,640],tab:['Tablet',768,1024],big:['Large phone',430,932],mob:['Phone',390,844],sm:['Small phone',360,640],fill:['Fit pane',0,0]};
+const devbar=()=>[['desk','🖥 Desktop'],['tab','Tablet'],['mob','📱 Phone']].map(([k,l])=>`<button class="tb ${(S.dev||'desk')==k?'on':''}" data-a=dev data-v=${k}>${l}</button>`).join('')+`<select data-c=dev title="More sizes">${Object.entries(DEV).map(([k,v])=>`<option value=${k} ${(S.dev||'desk')==k?'selected':''}>${v[0]}${v[1]?' '+v[1]+'×'+v[2]:''}</option>`).join('')}</select><button class=tb data-a=rot title="Rotate">⟲</button><span class="mu sp" id=dlab style="font-size:12px"></span><button class=tb data-a=fs title="${S.fs?'Exit full screen (Esc)':'Full screen preview'}">${S.fs?'✕ Exit':'⛶ Full screen'}</button>`;
+function fit(){const st=$('#stage'),d=$('#dev');if(!st||!d)return;const k=S.dev||'desk',f=DEV[k],lb=$('#dlab');
+ if(k=='fill'){d.style.cssText='position:absolute;inset:0';if(lb)lb.textContent='Fit pane';return}
+ let w=f[1],h=f[2];if(S.rot&&k!='desk')[w,h]=[h,w];
+ const sc=Math.min(1,(st.clientWidth-12)/w,(st.clientHeight-12)/h),r=['mob','big','sm'].includes(k)?28:k=='tab'?18:6;
+ d.style.cssText=`position:absolute;width:${w}px;height:${h}px;transform:scale(${sc});transform-origin:0 0;left:${Math.max(0,(st.clientWidth-w*sc)/2)}px;top:${Math.max(0,(st.clientHeight-h*sc)/2)}px;border:1px solid var(--bd);border-radius:${r}px;overflow:hidden;background:#fff;box-shadow:0 2px 14px rgba(0,0,0,.25)`;
+ if(lb)lb.textContent=f[0]+' '+w+'×'+h+' · '+Math.round(sc*100)+'%'}
+const ro=typeof ResizeObserver!='undefined'?new ResizeObserver(()=>fit()):null;addEventListener('resize',()=>fit());
+async function saveAs(name,data){const d=window.claude&&await claude.use('downloads');if(d){try{await d.save({filename:name,data})}catch(e){if(e.code!='declined')toast('Download failed: '+(e.message||e.code))}return}
+ const b=data instanceof Blob?data:new Blob([data]),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+const slug=n=>String(n||'').replace(/[^\w.-]+/g,'-').replace(/^-+|-+$/g,'')||'forge-project';
+const safe=f=>String(f).replace(/\\/g,'/').split('/').filter(x=>x&&x!='.'&&x!='..').join('/');
+function standalone(p){let h=doc(p);const vp='<meta name="viewport" content="width=device-width, initial-scale=1">';if(!/<meta[^>]+name=["']?viewport/i.test(h))h=/<head[^>]*>/i.test(h)?h.replace(/<head[^>]*>/i,m=>m+vp):vp+h;return h}
+const readme=(p,n)=>['# '+p.name,'','Built with Forge on '+new Date().toISOString().slice(0,10)+'.','','## Run it','','- Open `index.html` in a browser, or open `standalone.html` (the same app in a single file with its CSS and JavaScript inlined).','- Or serve the folder: `npm start` (uses `npx serve`) or `python3 -m http.server`.','- Libraries such as three.js load from a CDN, so an internet connection is needed.','','## Files','',...n.map(f=>'- `'+safe(f)+'`'),'','## Build log','','`docs/build-log.md` holds the chat that produced this project.',''].join('\n');
+const chatLog=p=>{const cs=D.ch.filter(c=>c.pid==p.id&&c.m.length);return cs.length?'# Build log — '+p.name+'\n\n'+cs.map(c=>'## '+c.t+'\n\n'+c.m.filter(m=>!m.err).map(m=>(m.r=='user'?'**You:** ':'**Forge'+(m.e?' ('+m.e+')':'')+':** ')+m.c.replace(/<file path="([^"]+)">[\s\S]*?(<\/file>|$)/g,'`[file: $1]`')).join('\n\n')).join('\n\n---\n\n'):''};
+async function dl(){const p=P(),names=Object.keys(p.files);if(!window.JSZip||!names.length)return toast('Nothing to download yet.');
+ const root=slug(p.name),z=new JSZip(),d=z.folder(root),has=f=>names.some(n=>safe(n).toLowerCase()==f);
+ names.forEach(n=>{const k=safe(n);if(k)d.file(k,p.files[n])});
+ if(!has('readme.md'))d.file('README.md',readme(p,names));
+ if(!has('package.json'))d.file('package.json',JSON.stringify({name:slug(p.name).toLowerCase(),version:'1.0.0',private:true,description:p.name+' — built with Forge',scripts:{start:'npx serve .'}},null,2));
+ if(!has('.gitignore'))d.file('.gitignore','node_modules\n.DS_Store\ndist\n');
+ if(has('index.html')&&!has('standalone.html'))d.file('standalone.html',standalone(p));
+ const log=chatLog(p);if(log)d.file('docs/build-log.md',log);
+ d.file('forge-project.json',JSON.stringify({name:p.name,entry:'index.html',files:names.map(safe),exportedAt:new Date().toISOString(),generator:'Forge'},null,2));
+ await saveAs(root+'.zip',await z.generateAsync({type:'blob',compression:'DEFLATE'}));toast('Downloaded '+root+'.zip — '+names.length+' project file(s) plus README, package.json, a standalone page and the build log.')}
+async function imp(f){if(!f)return;try{const x=JSON.parse(await f.text());x.pr.forEach(p=>D.pr.some(y=>y.id==p.id)||D.pr.push(p));x.ch.forEach(c=>D.ch.some(y=>y.id==c.id)||D.ch.push(c));save();R();toast('Backup merged.')}catch(e){toast('That file is not a valid backup.')}}
+/* ---------- actions ---------- */
+const sure=k=>{if(S.cf==k){S.cf=null;return true}S.cf=k;setTimeout(()=>{if(S.cf==k)S.cf=null},4000);toast('Click again to confirm removal.');return false};
+function newChat(){const e=D.ch.find(c=>c.pid==S.pid&&!c.m.length&&!(c.d||'').trim());if(e){S.cid=e.id;toast('This project already has an empty chat — switched to it.')}else nc0();save();setTa();upd()}
+function newProj(){const e=D.pr.find(p=>!Object.keys(p.files).length&&D.ch.filter(c=>c.pid==p.id).every(c=>!c.m.length&&!(c.d||'').trim()));if(e){S.pid=e.id;S.cid=(D.ch.find(c=>c.pid==e.id)||{}).id||nc0();toast('You already have an empty project — switched to it.')}else np0();save();setTa();upd()}
+function rmc(id){const c=D.ch.find(x=>x.id==id);if(!c)return;D.ch=D.ch.filter(x=>x.id!=id);D.ch.forEach(x=>{if(x.sync)x.sync=x.sync.filter(i=>i!=id)});if(!D.ch.some(x=>x.pid==c.pid))D.ch.push({id:uid(),pid:c.pid,t:'New chat',m:[],d:''});if(!C())S.cid=(D.ch.find(x=>x.pid==S.pid)||{}).id;save()}
+function rmp(id){D.pr=D.pr.filter(x=>x.id!=id);D.ch=D.ch.filter(x=>x.pid!=id);D.pr.forEach(x=>{if(x.sync)x.sync=x.sync.filter(i=>i!=id)});D.ch.forEach(x=>{if(x.sync)x.sync=x.sync.filter(i=>D.ch.some(y=>y.id==i))});if(!D.pr.length)np0();if(!P())S.pid=D.pr[0].id;if(!C())S.cid=(D.ch.find(x=>x.pid==S.pid)||{}).id||nc0();save()}
+function syn(){const p=P(),c=C();p.sync=p.sync||[];c.sync=c.sync||[];const op=D.pr.filter(x=>x.id!=p.id),oc=D.ch.filter(x=>x.pid!=p.id&&x.m.length);
+ return`<div class=card2 style="padding:10px;margin:0 8px"><b>⇄ Sync</b><div class=mu>Linked items share context with this chat, so nothing gets lost between chats and projects. Links work both ways.</div>
+ <div class=mu style="margin-top:6px"><b>Projects</b> — their files become visible to the engine</div>${op.map(x=>`<label style="display:block"><input type=checkbox data-sy=p data-id=${x.id} ${p.sync.includes(x.id)?'checked':''}> ${esc(x.name)} <span class=mu>· ${Object.keys(x.files).length} files</span></label>`).join('')||'<div class=mu>No other projects yet.</div>'}
+ <div class=mu style="margin-top:6px"><b>Chats from other projects</b></div>${oc.map(x=>`<label style="display:block"><input type=checkbox data-sy=c data-id=${x.id} ${c.sync.includes(x.id)?'checked':''}> ${esc(x.t)} <span class=mu>· ${esc((D.pr.find(y=>y.id==x.pid)||{}).name)}</span></label>`).join('')||'<div class=mu>No other chats with content yet.</div>'}
+ <div class=row style="padding:6px 0 0"><button class=b data-a=merge>Merge linked project files into this one</button><button class=b data-a=sync>Close</button></div></div>`}
+const enter=u=>{if(!U.some(x=>x.admin)){U.find(y=>y.u==u).admin=1;W('users',U)}load(u);R();if(me().admin)toast('👑 Signed in as '+u+' — Administrator with full control')};
+const A={mode(v){S.mode=v;R()},rcok(){S.rc=null;R()},demo(){P().files['index.html']=DEMO;S.tab='pv';S.last=null;save();upd()},view(v){S.view=v;S.fs=0;R()},theme(){const t=document.documentElement,d=t.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');t.dataset.theme=d=='dark'?'light':'dark';W('theme',t.dataset.theme)},
+ out(){S.user=null;D=null;W('sess',null);R()},pow(){cfg.on=!cfg.on;W('cfg',cfg);R()},
+ async go(){const u=g('u').toLowerCase(),p=g('p');let er='';
+  if(S.mode=='in'){const x=U.find(y=>y.u==u);if(!x||x.h!=await H(u+':'+p))er='Wrong username or password.';else if(x.off)er='This account has been suspended by an administrator.';else return enter(u)}
+  else if(S.mode=='up'){if(u.length<3||p.length<6)er='Username needs 3+ characters and password 6+.';else if(U.find(y=>y.u==u))er='That username is taken.';else{const rc=code();U.push({u,h:await H(u+':'+p),r:await H(rc),admin:!U.length});W('users',U);S.rc=rc;return enter(u)}}
+  else{const x=U.find(y=>y.u==u),k=g('rc').toUpperCase(),n=g('np');if(!x||n.length<6||x.r!=await H(k))er='Check the username, the recovery code and a new password (6+ characters).';else{const rc=code();x.h=await H(u+':'+n);x.r=await H(rc);W('users',U);S.rc=rc;return enter(u)}}
+  $('#er').textContent=er},
+ np(){newProj()},nc(){newChat()},sync(){S.sy=!S.sy;upd()},
+ xc(v){if(!sure('c'+v))return;rmc(v);setTa();upd()},xp(){if(!sure('p'+S.pid))return;rmp(S.pid);setTa();upd()},
+ merge(){const p=P(),n=D.pr.filter(x=>(p.sync||[]).includes(x.id)).reduce((a,x)=>{for(const k in x.files)if(!(k in p.files)){p.files[k]=x.files[k];a++}return a},0);save();S.last=null;upd();toast(n?n+' file(s) merged into '+p.name+'.':'Nothing new to merge — this project already has those files.')},oc(v){const c=D.ch.find(x=>x.id==v);S.pid=c.pid;S.cid=v;S.view='build';R()},op(v){S.pid=v;S.cid=(D.ch.find(c=>c.pid==v)||{}).id||nc0();S.view='build';R()},
+ tab(v){S.tab=v;pane()},file(v){S.file=v;pane()},rl(){S.last=null;pane()},dl,send,ex(v){$('#ta').value=v;send()},
+ pxsave(){const v=g('px');W('proxy',v);S.netok=undefined;toast(v?'Proxy saved — testing the connection…':'Proxy disabled.');netTest()},pxclr(){W('proxy','');S.netok=undefined;netTest()},
+ dt(v){S.dt=v;S.q='';S.hl=null;R();if(v=='keys'&&S.netok===undefined)netTest()},net(){netTest()},ed(v){S.ed=S.ed==v?null:v;rd()},
+ async test(v){const e=D.eng.find(x=>x.id==v);toast('Testing '+e.name+'…');await chk(e);save();rd();toast(e.name+': '+(e.chk.ok?'✓ live':'✗ '+e.chk.msg))},
+ nch(){const f=fo(),c={id:uid(),name:'Chain '+(f.chains.length+1),ids:[]};f.chains.push(c);f.act=c.id;save();rd()},
+ dch(){const f=fo();if(f.chains.length<2)return toast('Keep at least one chain.');f.chains=f.chains.filter(c=>c.id!=f.act);f.act=f.chains[0].id;save();rd()},
+ cad(){const v=$('#cadd').value;if(v){ch0().ids.push(v);save();rd()}},cx(v){const c=ch0();c.ids=c.ids.filter(i=>i!=v);save();rd()},
+ cu(v){const a=ch0().ids,i=a.indexOf(v);if(i>0){[a[i-1],a[i]]=[a[i],a[i-1]];save();rd()}},cd(v){const a=ch0().ids,i=a.indexOf(v);if(i>=0&&i<a.length-1){[a[i+1],a[i]]=[a[i],a[i+1]];save();rd()}},
+ tg(v){const e=D.eng.find(x=>x.id==v);e.on=e.on?0:1;e.cool=0;save();rd()},
+ dp(v){if(!sure('p'+v))return;rmp(v);rd()},
+ dev(v){S.dev=v;pane()},rot(){S.rot=!S.rot;pane()},fs(){S.fs=!S.fs;pane()},
+ es(v){S.es=v;rd()},de(v){if(!sure('e'+v))return;delE(v);rd()},
+ eadd(){const kid=$('#ek2').value,m=g('em2');if(!kid||!m)return toast('Pick a key and a model.');const k=D.keys.find(x=>x.id==kid);if(k.status=='ok'&&!k.models.includes(m))return toast('This key didn’t report that model — pick one from the list.');const nid=addEng(kid,m,g('en2')),e=D.eng.find(x=>x.id==nid);e.credits=parseFloat(g('ec2'))||0;e.cost=parseFloat(g('ex2'))||1;save();rd()},
+ async kadd(){const prov=$('#kp').value,url=g('ku'),key=g('kk');if(!url||!key)return toast('Base URL and API key are required.');if(D.keys.some(x=>x.key==key&&x.url==url))return toast('That key is already added.');const k={id:uid(),name:g('kn')||prov+' key',prov,url,kind:PR[prov].kind,key,status:'checking',models:[]};D.keys.push(k);D.eng.filter(e=>!e.builtin&&!e.keyId&&e.prov==prov).forEach(e=>e.keyId=k.id);S.ko=k.id;S.kq='';save();await verify(k.id)},
+ kver(v){verify(v)},vall(){return vallKeys()},veng(){return vallEng()},kopen(v){S.ko=S.ko==v?null:v;S.kq='';rd()},ked(v){S.ke=S.ke==v?null:v;rd()},
+ kuse(v,t){const kid=t.dataset.k,e=D.eng.find(x=>x.keyId==kid&&x.model==v);if(e){if(!sure('e'+e.id))return;delE(e.id)}else addEng(kid,v);rd()},
+ kdel(v){if(!sure('k'+v))return;const n=D.eng.filter(e=>e.keyId==v);n.forEach(e=>delE(e.id));D.keys=D.keys.filter(k=>k.id!=v);save();toast(n.length?'Key and its '+n.length+' engine(s) removed.':'Key removed.');rd()},
+ use(v){const m=mods().find(x=>(x.kid||'c:'+x.prov)+'|'+x.id==v);if(!m)return toast('Model not found — reload the list and try again.');const go=(id,msg)=>{S.dt='eng';S.q='';S.es='all';S.hl=id;R();toast(msg)};
+  const ex=m.kid?D.eng.find(x=>x.keyId==m.kid&&x.model==m.id):D.eng.find(x=>x.model==m.id&&(x.prov==m.prov||kr(x).prov==m.prov));
+  if(ex){if(m.kid){if(!sure('e'+ex.id))return;delE(ex.id);toast('Engine removed.');return rd()}return go(ex.id,'That engine already exists — here it is.')}
+  const k=m.kid?D.keys.find(x=>x.id==m.kid):D.keys.find(x=>x.prov==m.prov&&x.status!='bad'),id=addEng(k&&k.id,m.id,m.name,m.prov);
+  go(id,k?m.name+' added to Engines.':m.name+' added to Engines — add an '+m.prov+' API key to activate it.')},
+ ekey(v){const e=D.eng.find(x=>x.id==v);S.kpre={prov:e.prov};S.dt='keys';S.q='';R()},
+ gadm(){S.view='dash';S.dt='ad';R()},nx(){S.note=null;rd()},
+ async uadd(){const u=g('nu').toLowerCase(),p=g('np2');if(u.length<3||p.length<6)return toast('Username needs 3+ characters and password 6+.');if(U.find(x=>x.u==u))return toast('That username is taken.');const rc=code();U.push({u,h:await H(u+':'+p),r:await H(rc),admin:$('#nadm').checked?1:0});W('users',U);S.note='Created '+u+'. Their recovery code (share it once): '+rc;rd()},
+ urole(v){const x=U.find(y=>y.u==v);if(x.admin&&U.filter(y=>y.admin).length<2)return toast('Keep at least one admin.');x.admin=x.admin?0:1;W('users',U);rd()},
+ usus(v){const x=U.find(y=>y.u==v);if(v==S.user)return toast('You can’t suspend your own account.');x.off=x.off?0:1;W('users',U);rd()},
+ async upw(v){const x=U.find(y=>y.u==v),t=code().slice(0,9);x.h=await H(v+':'+t);W('users',U);S.note='Temporary password for '+v+': '+t;rd()},
+ udel(v){const x=U.find(y=>y.u==v);if(v==S.user)return toast('You can’t delete your own account.');if(x.admin&&U.filter(y=>y.admin).length<2)return toast('Keep at least one admin.');U=U.filter(y=>y.u!=v);W('users',U);try{localStorage.removeItem('fg:d:'+v)}catch(e){}rd()},
+ mf(v,t){const k=t.dataset.k,f=S.mf;if(k=='src'){f.src=v;f.prov=[];f.cap=[];f.tier=[];$('#mfx').innerHTML=mfx();return}if(k=='tier')v=+v;const a=f[k],i=a.indexOf(v);i<0?a.push(v):a.splice(i,1);$('#mfx').innerHTML=mfx()},
+ mclr(){S.mf={...S.mf,prov:[],cap:[],tier:[],ctx:0,sort:'rel'};$('#mfx').innerHTML=mfx()},live,
+ dc(v){if(!sure('c'+v))return;rmc(v);rd()},
+ async exp(){saveAs('forge-backup.json',JSON.stringify({...D,keys:(D.keys||[]).map(k=>({...k,key:''}))},null,1))}};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a]');if(t&&A[t.dataset.a])A[t.dataset.a](t.dataset.v,t)});
+document.addEventListener('input',e=>{const t=e.target;if(t.id=='ed'){P().files[S.file]=t.value;save();S.last=null}else if(t.id=='ta'){C().d=t.value;save()}else if(t.id=='q'){S.q=t.value;$('#list').innerHTML=lst()}else if(t.id=='mq'){S.mf.q=t.value;$('#mr').innerHTML=mres()}else if('ms' in t.dataset){S.kq=t.value;const k=D.keys.find(x=>x.id==S.ko);if(k)$('#kl'+k.id).innerHTML=kml(k)}});
+document.addEventListener('change',e=>{const t=e.target,d=t.dataset,n=x=>Math.max(0,parseFloat(x)||0);
+ if(d.e){const x=D.eng.find(y=>y.id==t.closest('[data-id]').dataset.id),k=d.e;if(k=='key'){if(t.value.trim())x.key=t.value.trim()}else if(k=='credits'||k=='cost')x[k]=n(t.value);else if(t.value.trim())x[k]=t.value.trim();save();tb()}
+ else if(d.k=='cname'){ch0().name=t.value.trim()||'Chain';save()}
+ else if(d.r){fo().r[d.r]=t.checked?1:0;save()}
+ else if(d.fo){fo()[d.fo]=n(t.value);save()}
+ else if(d.p){D.pr.find(y=>y.id==d.p).name=t.value.trim()||'Untitled';save()}
+ else if(d.sy){const [x,y]=d.sy=='p'?[P(),D.pr.find(z=>z.id==d.id)]:[C(),D.ch.find(z=>z.id==d.id)];x.sync=x.sync||[];y.sync=y.sync||[];if(t.checked){if(!x.sync.includes(y.id))x.sync.push(y.id);if(!y.sync.includes(x.id))y.sync.push(x.id)}else{x.sync=x.sync.filter(i=>i!=y.id);y.sync=y.sync.filter(i=>i!=x.id)}save();upd()}
+ else if(d.ke){const k=D.keys.find(x=>x.id==t.closest('[data-kid]').dataset.kid),f=d.ke,v=t.value.trim();if(v){if(f=='key'){k.key=v;k.status='unknown';k.models=[];k.err='';toast('Key replaced — click Verify to refresh its models.')}else{k[f]=v;if(f=='url'){k.status='unknown';k.models=[]}}save()}}
+ else if('nc' in d){S.nc=t.checked;S.dt=='keys'||S.dt=='mo'&&$('#mfx')?(S.dt=='mo'?$('#mfx').innerHTML=mfx():rd()):0}
+ else if(d.c=='dev'){S.dev=t.value;pane()}
+ else if(d.m){S.mf[d.m]=d.m=='ctx'?+t.value:t.value;$('#mfx').innerHTML=mfx()}
+ else if(d.c=='chain'){fo().act=t.value;save();rd()}
+ else if(d.c=='proj'){S.pid=t.value;S.cid=(D.ch.find(c=>c.pid==S.pid)||{}).id||nc0();setTa();upd()}
+ else if(d.c=='kprov'){$('#ku').value=PR[t.value].url}
+ else if(d.c=='ekey'){$('#dlm').innerHTML=mdl(D.keys.find(k=>k.id==t.value))}
+ else if(t.id=='imp')imp(t.files[0])});
+document.addEventListener('keydown',e=>{if(e.key=='Escape'&&S.fs){S.fs=0;pane();return}if(e.key!='Enter')return;if(!S.user&&e.target.tagName=='INPUT')A.go();else if(e.target.id=='ta'&&!e.shiftKey){e.preventDefault();send()}});
+addEventListener('storage',e=>{if(!e.key||e.key.indexOf('fg:')!=0)return;
+ if(e.key=='fg:cfg')cfg=L('cfg',cfg);else if(e.key=='fg:users')U=L('users',U);
+ else if(S.user&&e.key=='fg:d:'+S.user&&!S.busy){D=L('d:'+S.user,D);mig();if(!P())S.pid=D.pr[0].id;if(!C())S.cid=(D.ch.find(c=>c.pid==S.pid)||{}).id||nc0()}else return;
+ if(!S.rc&&!(document.activeElement&&/^(ta|ed)$/.test(document.activeElement.id)))R()});
+{const s=L('sess',null);if(s&&U.find(x=>x.u==s&&!x.off))load(s)}R();
+</script></body></html>

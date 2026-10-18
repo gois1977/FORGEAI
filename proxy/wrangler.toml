@@ -1,0 +1,7 @@
+name = "forge-proxy"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+# Replace with your own GitHub Pages origin (no trailing slash, no path).
+ALLOWED_ORIGIN = "https://YOUR-GITHUB-USERNAME.github.io"
