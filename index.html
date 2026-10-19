@@ -268,4 +268,28 @@ addEventListener('storage',e=>{if(!e.key||e.key.indexOf('fg:')!=0)return;
  else if(S.user&&e.key=='fg:d:'+S.user&&!S.busy){D=L('d:'+S.user,D);if(!P())S.pid=D.pr[0].id;if(!C())S.cid=(D.ch.find(c=>c.pid==S.pid)||{}).id||nc0()}else return;
  if(!S.rc&&!(document.activeElement&&/^(ta|ed)$/.test(document.activeElement.id)))R()});
 {const s=L('sess',null);if(s&&U.find(x=>x.u==s&&!x.off))load(s)}R();
+ load(S)||(R());
+  </script>
+
+  <!-- Firebase (Módulos v10) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAwypnuWEXalIc0MJ_lAot8dpJGXQ6vaOg",
+      authDomain: "ai-app-aed75.firebaseapp.com",
+      projectId: "ai-app-aed75",
+      storageBucket: "ai-app-aed75.firebasestorage.app",
+      messagingSenderId: "246244531639",
+      appId: "1:246244531639:web:8dc98a19c78b871f1e9c32",
+      measurementId: "G-7MYRPD0Q6B"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    console.log("Firebase ligado com sucesso ao Forge OS!");
+  </script>
+</body>
+</html>
 </script></body></html>
